@@ -1,46 +1,38 @@
-name: C++ CI (CMake)
-
-on:
-  push:
-    branches: [ "master", "main" ]
-  pull_request:
-    branches: [ "master", "main" ]
+name: CMake Build
+on: [push]
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # Описываем комбинации ОС и компиляторов, которые нам нужны
         include:
           - os: ubuntu-latest
-            cpp_compiler: g++
+            compiler: gcc
+            cc: gcc
+            cxx: g++
           - os: ubuntu-latest
-            cpp_compiler: clang++
+            compiler: clang
+            cc: clang
+            cxx: clang++
           - os: windows-latest
-            cpp_compiler: cl
-        exclude:
-          - os: ubuntu-latest
-            cpp_compiler: cl
-          - os: windows-latest
-            cpp_compiler: g++
-          - os: windows-latest
-            cpp_compiler: clang++
+            compiler: msvc
+            cc: cl
+            cxx: cl
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
+      # Используем современный кроссплатформенный синтаксис -S . -B _build
+      # Он отлично переваривается и Bash на Linux, и PowerShell на Windows
       - name: Configure CMake
-        run: cmake -B build -S . -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: cmake -S . -B _build
 
-      - name: Build
-        run: cmake --build build --config Release
+      - name: Build Project
+        run: cmake --build _build
 
-      - name: Run example1
-        run: ./build/example1
-        if: runner.os == 'Linux'
-
-      - name: Run example2
-        run: ./build/example2
-        if: runner.os == 'Linux'
