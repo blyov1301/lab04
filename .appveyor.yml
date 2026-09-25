@@ -1,0 +1,17 @@
+version: 1.0.{build}
+image: Visual Studio 2019
+
+platform:
+  - x64
+
+configuration:
+  - Release
+
+build_script:
+  - cd formatter_lib && cmake -S . -B _build -G "Visual Studio 16 2019" -A %PLATFORM% && cmake --build _build --config %CONFIGURATION%
+  - cd ../formatter_ex_lib && cmake -S . -B _build -G "Visual Studio 16 2019" -A %PLATFORM% && cmake --build _build --config %CONFIGURATION%
+  - cd ../hello_world_application && cmake -S . -B _build -G "Visual Studio 16 2019" -A %PLATFORM% && cmake --build _build --config %CONFIGURATION%
+  - .\hello_world_application\_build\%CONFIGURATION%\hello_world.exe
+  - cd ../solver_lib && cmake -S . -B _build -G "Visual Studio 16 2019" -A %PLATFORM% && cmake --build _build --config %CONFIGURATION%
+  - cd ../solver_application && cmake -S . -B _build -G "Visual Studio 16 2019" -A %PLATFORM% && cmake --build _build --config %CONFIGURATION%
+  - .\solver_application\_build\%CONFIGURATION%\solver.exe
