@@ -2,82 +2,50 @@ name: CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ master ]
 
 jobs:
   build:
-    name: ${{ matrix.os }} / ${{ matrix.compiler }}
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.compiler }}
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            compiler: gcc
-            cxx: g++
-            cc: gcc
-          - os: ubuntu-latest
-            compiler: clang
-            cxx: clang++
-            cc: clang
-          - os: windows-latest
-            compiler: msvc
-            cxx: cl
-            cc: cl
+        compiler: [ gcc, clang ]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure compiler (Linux)
-        if: runner.os == 'Linux'
+      - name: Set compiler
         run: |
-          echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
-          echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
+          else
+            echo "CC=gcc" >> $GITHUB_ENV
+            echo "CXX=g++" >> $GITHUB_ENV
+          fi
+
+      - name: Install clang (if needed)
+        if: matrix.compiler == 'clang'
+        run: sudo apt-get update && sudo apt-get install -y clang
 
       - name: Build formatter_lib
-        run: |
-          cmake -S formatter_lib -B formatter_lib/_build
-          cmake --build formatter_lib/_build --config Release
+        run: cd formatter_lib && cmake -S . -B _build && cmake --build _build
 
       - name: Build formatter_ex_lib
-        run: |
-          cmake -S formatter_ex_lib -B formatter_ex_lib/_build
-          cmake --build formatter_ex_lib/_build --config Release
+        run: cd formatter_ex_lib && cmake -S . -B _build && cmake --build _build
 
-      - name: Build hello_world_application
-        run: |
-          cmake -S hello_world_application -B hello_world_application/_build
-          cmake --build hello_world_application/_build --config Release
-
-      - name: Run hello_world (Linux)
-        if: runner.os == 'Linux'
-        run: ./hello_world_application/_build/hello_world
-
-      - name: Run hello_world (Windows)
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: hello_world_application\_build\Release\hello_world.exe
+      - name: Build and run hello_world_application
+        run: cd hello_world_application && cmake -S . -B _build && cmake --build _build && ./_build/hello_world
 
       - name: Build solver_lib
-        run: |
-          cmake -S solver_lib -B solver_lib/_build
-          cmake --build solver_lib/_build --config Release
+        run: cd solver_lib && cmake -S . -B _build && cmake --build _build
 
-      - name: Build solver_application
-        run: |
-          cmake -S solver_application -B solver_application/_build
-          cmake --build solver_application/_build --config Release
-
-      - name: Run solver (Linux)
-        if: runner.os == 'Linux'
-        run: ./solver_application/_build/solver
-
-      - name: Run solver (Windows)
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: solver_application\_build\Release\solver.exe
+      - name: Build and run solver_application
+        run: cd solver_application && cmake -S . -B _build && cmake --build _build && ./_build/solver
 EOF
