@@ -1,0 +1,46 @@
+name: C++ CI (CMake)
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            cpp_compiler: g++
+          - os: ubuntu-latest
+            cpp_compiler: clang++
+          - os: windows-latest
+            cpp_compiler: cl
+        exclude:
+          - os: ubuntu-latest
+            cpp_compiler: cl
+          - os: windows-latest
+            cpp_compiler: g++
+          - os: windows-latest
+            cpp_compiler: clang++
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -B build -S . -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Run example1
+        run: ./build/example1
+        if: runner.os == 'Linux'
+
+      - name: Run example2
+        run: ./build/example2
+        if: runner.os == 'Linux'
