@@ -1,65 +1,83 @@
-name: C++ CI (CMake)
+name: CI
 
 on:
   push:
-    branches: [ "master", "main" ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ "master", "main" ]
+    branches: [ master, main ]
 
 jobs:
   build:
+    name: ${{ matrix.os }} / ${{ matrix.compiler }}
     runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            cpp_compiler: g++
+            compiler: gcc
+            cxx: g++
+            cc: gcc
           - os: ubuntu-latest
-            cpp_compiler: clang++
+            compiler: clang
+            cxx: clang++
+            cc: clang
           - os: windows-latest
-            cpp_compiler: cl
-        exclude:
-          - os: ubuntu-latest
-            cpp_compiler: cl
-          - os: windows-latest
-            cpp_compiler: g++
-          - os: windows-latest
-            cpp_compiler: clang++
+            compiler: msvc
+            cxx: cl
+            cc: cl
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure compiler (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+          echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
 
       - name: Build formatter_lib
         run: |
-          cmake -S formatter_lib -B formatter_lib/_build -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          cmake -S formatter_lib -B formatter_lib/_build
           cmake --build formatter_lib/_build --config Release
 
       - name: Build formatter_ex_lib
         run: |
-          cmake -S formatter_ex_lib -B formatter_ex_lib/_build -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          cmake -S formatter_ex_lib -B formatter_ex_lib/_build
           cmake --build formatter_ex_lib/_build --config Release
 
       - name: Build hello_world_application
         run: |
-          cmake -S hello_world_application -B hello_world_application/_build -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          cmake -S hello_world_application -B hello_world_application/_build
           cmake --build hello_world_application/_build --config Release
+
+      - name: Run hello_world (Linux)
+        if: runner.os == 'Linux'
+        run: ./hello_world_application/_build/hello_world
+
+      - name: Run hello_world (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: hello_world_application\_build\Release\hello_world.exe
 
       - name: Build solver_lib
         run: |
-          cmake -S solver_lib -B solver_lib/_build -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          cmake -S solver_lib -B solver_lib/_build
           cmake --build solver_lib/_build --config Release
 
       - name: Build solver_application
         run: |
-          cmake -S solver_application -B solver_application/_build -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          cmake -S solver_application -B solver_application/_build
           cmake --build solver_application/_build --config Release
 
-      - name: Run hello_world
-        run: ./hello_world_application/_build/hello_world
+      - name: Run solver (Linux)
         if: runner.os == 'Linux'
-
-      - name: Run solver
         run: ./solver_application/_build/solver
-        if: runner.os == 'Linux'
+
+      - name: Run solver (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: solver_application\_build\Release\solver.exe
+EOF
