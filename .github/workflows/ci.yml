@@ -48,4 +48,3 @@ jobs:
 
       - name: Build and run solver_application
         run: cd solver_application && cmake -S . -B _build && cmake --build _build && ./_build/solver
-EOF
